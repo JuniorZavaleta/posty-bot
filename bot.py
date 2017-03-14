@@ -6,13 +6,13 @@ from emoji import emojize
 import pymysql.cursors
 import logging
 
-# Connect to the database
-connection = pymysql.connect(host='localhost',
-                             user='root',
-                             password='root',
-                             db='posty',
-                             charset='utf8mb4',
-                             cursorclass=pymysql.cursors.DictCursor)
+def openConnection():
+    return pymysql.connect(host='localhost',
+                           user='root',
+                           password='root',
+                           db='posty',
+                           charset='utf8mb4',
+                           cursorclass=pymysql.cursors.DictCursor)
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -36,6 +36,7 @@ def save(bot, update):
     update.message.reply_text('Post-it saved! ' + grinning_face)
 
 def savePostIt(chat_id, text):
+    connection = openConnection()
     try:
         with connection.cursor() as cursor:
             sql = "INSERT INTO `posty`.`post_its` (`chat_id`, `text`) VALUES (%s, %s);"
@@ -45,11 +46,33 @@ def savePostIt(chat_id, text):
     finally:
         connection.close()
 
+def all(bot, update):
+    response = ''
+    post_its = getAllFromDb(update.message.chat.id)
+
+    for post_it in post_its:
+        response += post_it['text'] + '\n'
+
+    update.message.reply_text('List of Post-it\n'+
+                              '================\n'+
+                              response)
+
+def getAllFromDb(chat_id):
+    connection = openConnection()
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT `text` FROM `posty`.`post_its` WHERE `chat_id` = %s;"
+            cursor.execute(sql, (chat_id))
+            return cursor.fetchall()
+    finally:
+        connection.close()
+
 updater = Updater(TOKEN)
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
 updater.dispatcher.add_handler(CommandHandler('save', save))
+updater.dispatcher.add_handler(CommandHandler('all', all))
 updater.bot.setWebhook(SITE_URL)
 updater.start_webhook()
 updater.idle()
