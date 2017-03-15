@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from telegram.ext import Updater, CommandHandler
+from telegram import InlineKeyboardMarkup,InlineKeyboardButton
+
 from emoji import emojize
 import pymysql.cursors
 import logging
@@ -47,15 +49,17 @@ def savePostIt(chat_id, text):
         connection.close()
 
 def all(bot, update):
-    response = ''
+    keyboard = []
     post_its = getAllFromDb(update.message.chat.id)
 
     for post_it in post_its:
-        response += '[{}] {}\n'.format(post_it['id'], post_it['text'][:40])
+        keyboard.append([InlineKeyboardButton(
+            '[{}] {}\n'.format(post_it['id'], post_it['text'][:40]),
+            callback_data='/seePostIt {}'.format(post_it['id'])
+        )])
 
-    update.message.reply_text('List of Post-it\n'+
-                              '================\n'+
-                              response,disable_web_page_preview=True)
+    update.message.reply_text('List of your Post-it',
+            reply_markup=InlineKeyboardMarkup(keyboard), one_time_keyboard=True)
 
 def getAllFromDb(chat_id):
     connection = openConnection()
