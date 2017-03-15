@@ -33,9 +33,20 @@ def hello(bot, update):
 def save(bot, update):
     text = update.message.text[6:]
     grinning_face = emojize(':grinning_face:', use_aliases=True)
-    savePostIt(update.message.chat.id, text)
 
-    update.message.reply_text('Post-it saved! ' + grinning_face)
+    if len(text) < 5:
+        response = 'The post-it is too short {}'.format(emojize(':disappointed:', use_aliases=True).encode('utf-8'))
+    elif len(text) > 200:
+        response = 'The post-it is too big {}'.format(emojize(':astonished:', use_aliases=True).encode('utf-8'))
+    else:
+        chat_id = update.message.chat.id
+        if (quantityOfPostItsFor(chat_id) < 10):
+            savePostIt(chat_id, text)
+            response = 'Post-it saved! {}'.format(emojize(':grinning:', use_aliases=True).encode('utf-8'))
+        else:
+            response = 'You have 10 post-its. Sorry, I can not add more post-its {}'.format(emojize(':cry:', use_aliases=True).encode('utf-8'))
+
+    update.message.reply_text(response)
 
 def savePostIt(chat_id, text):
     connection = openConnection()
@@ -47,6 +58,19 @@ def savePostIt(chat_id, text):
         connection.commit()
     finally:
         connection.close()
+
+def quantityOfPostItsFor(chat_id):
+    quantity = 0
+    connection = openConnection()
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT count(*) as quantity FROM `posty`.`post_its` WHERE chat_id = %s;"
+            cursor.execute(sql, (chat_id))
+            quantity = cursor.fetchone()['quantity']
+    finally:
+        connection.close()
+
+    return quantity
 
 def all(bot, update):
     keyboard = []
