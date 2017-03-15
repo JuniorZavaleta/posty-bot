@@ -55,7 +55,7 @@ def all(bot, update):
 
     update.message.reply_text('List of Post-it\n'+
                               '================\n'+
-                              response)
+                              response,disable_web_page_preview=True)
 
 def getAllFromDb(chat_id):
     connection = openConnection()
