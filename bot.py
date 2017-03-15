@@ -74,7 +74,8 @@ def quantityOfPostItsFor(chat_id):
 
 def all(bot, update):
     keyboard = []
-    post_its = getAllFromDb(update.message.chat.id)
+    chat_id  = update.message.chat.id
+    post_its = getFirstFive(chat_id)
 
     for post_it in post_its:
         keyboard.append([InlineKeyboardButton(
@@ -82,37 +83,98 @@ def all(bot, update):
             callback_data='/show {}'.format(post_it['id'])
         )])
 
-    update.message.reply_text('List of your Post-it',
-            reply_markup=InlineKeyboardMarkup(keyboard), one_time_keyboard=True)
+    if (quantityOfPostItsFor(chat_id) > 5):
+        keyboard.append([InlineKeyboardButton(
+            'Next 5 post-its', callback_data='last5'
+        )])
 
-def getAllFromDb(chat_id):
+    update.message.reply_text('List of your Post-it',
+            reply_markup=InlineKeyboardMarkup(keyboard))
+
+def getFirstFive(chat_id):
     connection = openConnection()
+    post_its = []
     try:
         with connection.cursor() as cursor:
-            sql = "SELECT `id`, `text` FROM `posty`.`post_its` WHERE `chat_id` = %s;"
+            sql = "SELECT `id`, `text` FROM `posty`.`post_its` WHERE `chat_id` = %s LIMIT 5;"
             cursor.execute(sql, (chat_id))
-            return cursor.fetchall()
+            post_its = cursor.fetchall()
     finally:
         connection.close()
+    return post_its
+
+def getLastFive(chat_id):
+    connection = openConnection()
+    post_its = []
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT `id`, `text` FROM `posty`.`post_its` WHERE `chat_id` = %s LIMIT 5 OFFSET 5;"
+            cursor.execute(sql, (chat_id))
+            post_its = cursor.fetchall()
+    finally:
+        connection.close()
+    return post_its
 
 def show(bot, update):
-    order = update.callback_query.data
-    if '/show' in order:
-        post_it = findFromDb(update.callback_query.message.chat.id, order[5:])
+    query   = update.callback_query
+    order   = query.data
+    chat_id = query.message.chat.id
 
-        update.callback_query.message.reply_text(post_it['text'])
+    if '/show' in order:
+        post_it = findFromDb(chat_id, order[5:])
+
+        query.message.reply_text(post_it['text'])
+    elif 'last5' == order:
+        keyboard = []
+        post_its = getLastFive(chat_id)
+
+        for post_it in post_its:
+            keyboard.append([InlineKeyboardButton(
+                '[{}] {}'.format(post_it['id'], post_it['text'][:40].encode('utf-8')),
+                callback_data='/show {}'.format(post_it['id'])
+            )])
+
+        keyboard.append([InlineKeyboardButton(
+            'First 5 post-its', callback_data='first5'
+        )])
+
+        bot.editMessageText(text=query.message.text,
+                            chat_id=chat_id,
+                            message_id=query.message.message_id,
+                            reply_markup=InlineKeyboardMarkup(keyboard))
+    elif 'first5' == order:
+        keyboard = []
+        post_its = getFirstFive(chat_id)
+
+        for post_it in post_its:
+            keyboard.append([InlineKeyboardButton(
+                '[{}] {}'.format(post_it['id'], post_it['text'][:40].encode('utf-8')),
+                callback_data='/show {}'.format(post_it['id'])
+            )])
+
+        if (quantityOfPostItsFor(chat_id) > 5):
+            keyboard.append([InlineKeyboardButton(
+                'Next 5 post-its', callback_data='last5'
+            )])
+
+        bot.editMessageText(text=query.message.text,
+                            chat_id=chat_id,
+                            message_id=query.message.message_id,
+                            reply_markup=InlineKeyboardMarkup(keyboard))
     else:
-        update.callback_query.message.reply_text('Wrong post it!')
+        query.message.reply_text('Wrong post it!')
 
 def findFromDb(chat_id, post_it_id):
     connection = openConnection()
+    post_it = None
     try:
         with connection.cursor() as cursor:
             sql = "SELECT `text` FROM `posty`.`post_its` WHERE `chat_id` = %s AND `id` = %s;"
             cursor.execute(sql, (chat_id, post_it_id))
-            return cursor.fetchone()
+            post_it = cursor.fetchone()
     finally:
         connection.close()
+    return post_it
 
 updater = Updater(TOKEN)
 
