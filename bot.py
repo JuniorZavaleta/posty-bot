@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 from telegram import InlineKeyboardMarkup,InlineKeyboardButton
 
 from emoji import emojize
@@ -54,8 +54,8 @@ def all(bot, update):
 
     for post_it in post_its:
         keyboard.append([InlineKeyboardButton(
-            '[{}] {}\n'.format(post_it['id'], post_it['text'][:40]),
-            callback_data='/seePostIt {}'.format(post_it['id'])
+            '[{}] {}'.format(post_it['id'], post_it['text'][:40].encode('utf-8')),
+            callback_data='/show {}'.format(post_it['id'])
         )])
 
     update.message.reply_text('List of your Post-it',
@@ -71,12 +71,32 @@ def getAllFromDb(chat_id):
     finally:
         connection.close()
 
+def show(bot, update):
+    order = update.callback_query.data
+    if '/show' in order:
+        post_it = findFromDb(update.callback_query.message.chat.id, order[5:])
+
+        update.callback_query.message.reply_text(post_it['text'])
+    else:
+        update.callback_query.message.reply_text('Wrong post it!')
+
+def findFromDb(chat_id, post_it_id):
+    connection = openConnection()
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT `text` FROM `posty`.`post_its` WHERE `chat_id` = %s AND `id` = %s;"
+            cursor.execute(sql, (chat_id, post_it_id))
+            return cursor.fetchone()
+    finally:
+        connection.close()
+
 updater = Updater(TOKEN)
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
 updater.dispatcher.add_handler(CommandHandler('save', save))
 updater.dispatcher.add_handler(CommandHandler('all', all))
+updater.dispatcher.add_handler(CallbackQueryHandler(show))
 updater.bot.setWebhook(SITE_URL)
 updater.start_webhook()
 updater.idle()
