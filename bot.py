@@ -51,7 +51,7 @@ def all(bot, update):
     post_its = getAllFromDb(update.message.chat.id)
 
     for post_it in post_its:
-        response += post_it['text'] + '\n'
+        response += '[{}] {}\n'.format(post_it['id'], post_it['text'][:40])
 
     update.message.reply_text('List of Post-it\n'+
                               '================\n'+
@@ -61,7 +61,7 @@ def getAllFromDb(chat_id):
     connection = openConnection()
     try:
         with connection.cursor() as cursor:
-            sql = "SELECT `text` FROM `posty`.`post_its` WHERE `chat_id` = %s;"
+            sql = "SELECT `id`, `text` FROM `posty`.`post_its` WHERE `chat_id` = %s;"
             cursor.execute(sql, (chat_id))
             return cursor.fetchall()
     finally:
