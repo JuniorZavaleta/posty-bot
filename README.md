@@ -11,6 +11,9 @@ https://www.digitalocean.com/community/tutorials/how-to-install-mysql-on-ubuntu-
 
 sudo apt-get install python-pip python-dev libmysqlclient-dev
 
+## Before the other packages
+```pip install setuptools```
+
 ## For Connection with Telegram
 ```pip install python-telegram-bot --upgrade```
 
