@@ -1,0 +1,46 @@
+Update: {
+  'message': {
+      'migrate_to_chat_id': 0,
+      'delete_chat_photo': False,
+      'new_chat_photo': [],
+      'entities': [
+          {
+              'length': 5,
+              'type': u'bot_command',
+              'offset': 0
+          },
+          {
+              'length': 11,
+              'type': u'url',
+              'offset': 6
+          }
+      ],
+      'text': u'/save tkyield.com',
+      'migrate_from_chat_id': 0,
+      'channel_chat_created': False,
+      'from': {
+          'username': u'JuniorZavaleta',
+          'first_name': u'Junior',
+          'last_name': u'Zavaleta',
+          'type': '',
+          'id': 108198894
+      },
+      'supergroup_chat_created': False,
+      'chat': {
+          'username': u'JuniorZavaleta',
+          'first_name': u'Junior',
+          'all_members_are_admins': False,
+          'title': '',
+          'last_name': u'Zavaleta',
+          'type': u'private',
+          'id': 108198894
+      },
+      'photo': [],
+      'date': 1489521554,
+      'group_chat_created': False,
+      'caption': '',
+      'message_id': 24,
+      'new_chat_title': ''
+  },
+  'update_id': 88610635
+}
