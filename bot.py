@@ -1,28 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
-from telegram import InlineKeyboardMarkup,InlineKeyboardButton
-
-from emoji import emojize
-import pymysql.cursors
 import logging
 
+import pymysql.cursors
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from telegram import InlineKeyboardMarkup,InlineKeyboardButton
+from emoji import emojize
+
+import settings
+
 def openConnection():
-    return pymysql.connect(host='localhost',
-                           user='root',
-                           password='root',
-                           db='posty',
-                           charset='utf8mb4',
+    return pymysql.connect(host=settings.DATABASE['HOST'],
+                           user=settings.DATABASE['USER'],
+                           password=settings.DATABASE['PASSWORD'],
+                           db=settings.DATABASE['DB_NAME'],
+                           charset=settings.DATABASE['CHARSET'],
                            cursorclass=pymysql.cursors.DictCursor)
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 logger = logging.getLogger()
-
-TOKEN='#'
-SITE_URL='#'
 
 def start(bot, update):
     update.message.reply_text('Hello World!')
@@ -154,7 +152,8 @@ def callback_handler(bot, update):
 
         for post_it in post_its:
             keyboard.append([InlineKeyboardButton(
-                '[{}] {}'.format(post_it['id'], post_it['text'][:40].encode('utf-8')),
+                '[{}] {}'.format(post_it['id'],
+                                 post_it['text'][:40].encode('utf-8')),
                 callback_data='/show {}'.format(post_it['id'])
             )])
 
@@ -182,13 +181,13 @@ def find(chat_id, post_it_id):
         connection.close()
     return post_it
 
-updater = Updater(TOKEN)
+updater = Updater(settings.TOKEN)
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
 updater.dispatcher.add_handler(CommandHandler('save', save))
 updater.dispatcher.add_handler(CommandHandler('all', all))
 updater.dispatcher.add_handler(CallbackQueryHandler(callback_handler))
-updater.bot.setWebhook(SITE_URL)
-updater.start_webhook()
+updater.bot.setWebhook(settings.SITE_URL)
+updater.start_webhook(port=settings.PORT)
 updater.idle()
