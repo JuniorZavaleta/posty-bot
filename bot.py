@@ -28,27 +28,33 @@ def start(bot, update):
     update.message.reply_text('Hello World!')
 
 def hello(bot, update):
-    update.message.reply_text('Hello ' + update.message.from_user.first_name + emojize(':grinning_face:', use_aliases=True))
+    update.message.reply_text('Hello {} {}'.format(
+        update.message.from_user.first_name,
+        emojize(':grinning_face:', use_aliases=True).encode('utf-8')))
 
 def save(bot, update):
     text = update.message.text[6:]
-    grinning_face = emojize(':grinning_face:', use_aliases=True)
 
     if len(text) < 5:
-        response = 'The post-it is too short {}'.format(emojize(':disappointed:', use_aliases=True).encode('utf-8'))
+        response = 'The post-it is too short {}'.format(
+            emojize(':disappointed:', use_aliases=True).encode('utf-8'))
     elif len(text) > 200:
-        response = 'The post-it is too big {}'.format(emojize(':astonished:', use_aliases=True).encode('utf-8'))
+        response = 'The post-it is too big {}'.format(
+            emojize(':astonished:', use_aliases=True).encode('utf-8'))
     else:
         chat_id = update.message.chat.id
-        if (quantityOfPostItsFor(chat_id) < 10):
-            savePostIt(chat_id, text)
-            response = 'Post-it saved! {}'.format(emojize(':grinning:', use_aliases=True).encode('utf-8'))
+        if quantity_of_post_its_for(chat_id) < 10:
+            save_post_it(chat_id, text)
+            response = 'Post-it saved! {}'.format(
+                emojize(':grinning:', use_aliases=True).encode('utf-8'))
         else:
-            response = 'You have 10 post-its. Sorry, I can not add more post-its {}'.format(emojize(':cry:', use_aliases=True).encode('utf-8'))
+            response = 'You have already 10 post-its. Sorry, I can not add \
+                        more post-its {}'.format(
+                emojize(':cry:', use_aliases=True).encode('utf-8'))
 
     update.message.reply_text(response)
 
-def savePostIt(chat_id, text):
+def save_post_it(chat_id, text):
     connection = openConnection()
     try:
         with connection.cursor() as cursor:
@@ -59,7 +65,7 @@ def savePostIt(chat_id, text):
     finally:
         connection.close()
 
-def quantityOfPostItsFor(chat_id):
+def quantity_of_post_its_for(chat_id):
     quantity = 0
     connection = openConnection()
     try:
@@ -75,23 +81,23 @@ def quantityOfPostItsFor(chat_id):
 def all(bot, update):
     keyboard = []
     chat_id  = update.message.chat.id
-    post_its = getFirstFive(chat_id)
+    post_its = get_first_five(chat_id)
 
     for post_it in post_its:
         keyboard.append([InlineKeyboardButton(
-            '[{}] {}'.format(post_it['id'], post_it['text'][:40].encode('utf-8')),
+            '[{}] {}'.format(post_it['id'],
+                             post_it['text'][:40].encode('utf-8')),
             callback_data='/show {}'.format(post_it['id'])
         )])
 
-    if (quantityOfPostItsFor(chat_id) > 5):
-        keyboard.append([InlineKeyboardButton(
-            'Next 5 post-its', callback_data='last5'
-        )])
+    if (quantity_of_post_its_for(chat_id) > 5):
+        keyboard.append([InlineKeyboardButton('Next 5 post-its',
+                                              callback_data='last5')])
 
     update.message.reply_text('List of your Post-it',
             reply_markup=InlineKeyboardMarkup(keyboard))
 
-def getFirstFive(chat_id):
+def get_first_five(chat_id):
     connection = openConnection()
     post_its = []
     try:
@@ -103,7 +109,7 @@ def getFirstFive(chat_id):
         connection.close()
     return post_its
 
-def getLastFive(chat_id):
+def get_last_five(chat_id):
     connection = openConnection()
     post_its = []
     try:
@@ -115,28 +121,28 @@ def getLastFive(chat_id):
         connection.close()
     return post_its
 
-def show(bot, update):
+def callback_handler(bot, update):
     query   = update.callback_query
     order   = query.data
     chat_id = query.message.chat.id
 
     if '/show' in order:
-        post_it = findFromDb(chat_id, order[5:])
+        post_it = find(chat_id, order[5:])
 
         query.message.reply_text(post_it['text'])
     elif 'last5' == order:
         keyboard = []
-        post_its = getLastFive(chat_id)
+        post_its = get_last_five(chat_id)
 
         for post_it in post_its:
             keyboard.append([InlineKeyboardButton(
-                '[{}] {}'.format(post_it['id'], post_it['text'][:40].encode('utf-8')),
+                '[{}] {}'.format(post_it['id'],
+                                 post_it['text'][:40].encode('utf-8')),
                 callback_data='/show {}'.format(post_it['id'])
             )])
 
-        keyboard.append([InlineKeyboardButton(
-            'First 5 post-its', callback_data='first5'
-        )])
+        keyboard.append([InlineKeyboardButton('First 5 post-its',
+                                              callback_data='first5')])
 
         bot.editMessageText(text=query.message.text,
                             chat_id=chat_id,
@@ -144,7 +150,7 @@ def show(bot, update):
                             reply_markup=InlineKeyboardMarkup(keyboard))
     elif 'first5' == order:
         keyboard = []
-        post_its = getFirstFive(chat_id)
+        post_its = get_first_five(chat_id)
 
         for post_it in post_its:
             keyboard.append([InlineKeyboardButton(
@@ -152,7 +158,7 @@ def show(bot, update):
                 callback_data='/show {}'.format(post_it['id'])
             )])
 
-        if (quantityOfPostItsFor(chat_id) > 5):
+        if (quantity_of_post_its_for(chat_id) > 5):
             keyboard.append([InlineKeyboardButton(
                 'Next 5 post-its', callback_data='last5'
             )])
@@ -164,7 +170,7 @@ def show(bot, update):
     else:
         query.message.reply_text('Wrong post it!')
 
-def findFromDb(chat_id, post_it_id):
+def find(chat_id, post_it_id):
     connection = openConnection()
     post_it = None
     try:
@@ -182,7 +188,7 @@ updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
 updater.dispatcher.add_handler(CommandHandler('save', save))
 updater.dispatcher.add_handler(CommandHandler('all', all))
-updater.dispatcher.add_handler(CallbackQueryHandler(show))
+updater.dispatcher.add_handler(CallbackQueryHandler(callback_handler))
 updater.bot.setWebhook(SITE_URL)
 updater.start_webhook()
 updater.idle()
